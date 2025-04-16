@@ -17,6 +17,13 @@ namespace mviz {
 
 class Renderer {
 public:
+    // 着色器类型枚举
+    enum class ShaderType {
+        BASIC,        // 基本着色器
+        POINT_CLOUD,  // 点云着色器
+        TEXT          // 文本着色器
+    };
+    
     Renderer();
     ~Renderer();
 
@@ -28,6 +35,15 @@ public:
     void setCamera(const Camera* camera) { m_camera = camera; }
     void setTFManager(const TFManager* tfManager) { m_tfManager = tfManager; }
     void setSceneManager(const SceneManager* sceneManager) { m_sceneManager = sceneManager; }
+    
+    // 添加特定类型的着色器
+    void addShader(ShaderType type, const std::shared_ptr<Shader>& shader);
+    
+    // 切换到特定类型的着色器
+    void useShader(ShaderType type);
+    
+    // 获取当前活动着色器
+    std::shared_ptr<Shader> getActiveShader() const { return m_shader; }
     
     // 创建和绘制基础场景元素
     void createCoordinateAxes(float size = 1.0f);
@@ -61,6 +77,7 @@ public:
 private:
     // 着色器和相机
     std::shared_ptr<Shader> m_shader;
+    std::unordered_map<ShaderType, std::shared_ptr<Shader>> m_shaders;
     const Camera* m_camera;
     const TFManager* m_tfManager;
     const SceneManager* m_sceneManager;

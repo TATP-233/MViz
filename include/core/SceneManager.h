@@ -12,6 +12,7 @@ namespace mviz {
 // 前向声明
 class Renderer;
 class Camera;
+class PointCloudVisual;
 
 // 可视化对象基类
 class VisualObject {
@@ -72,6 +73,9 @@ public:
     
     // 创建示例TF数据
     void createDemoTFs();
+    
+    // 创建示例点云数据
+    void createDemoPointCloud();
     
     // 设置参考坐标系
     void setReferenceFrame(const std::string& frame);

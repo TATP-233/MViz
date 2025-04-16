@@ -198,9 +198,24 @@ void UIManager::renderVisualObjectList(SceneManager& sceneManager) {
         }
     }
     
-    // 为未来扩展添加其他类型的可视化对象
+    // 点云可视化对象
     if (ImGui::CollapsingHeader("Point Clouds", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No point clouds available");
+        bool hasPointClouds = false;
+        
+        for (auto& [name, object] : visualObjects) {
+            // 查找点云类型的对象
+            if (name.find("point_cloud") != std::string::npos) {
+                hasPointClouds = true;
+                bool isVisible = object->isVisible();
+                if (ImGui::Checkbox(name.c_str(), &isVisible)) {
+                    object->setVisible(isVisible);
+                }
+            }
+        }
+        
+        if (!hasPointClouds) {
+            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No point clouds available");
+        }
     }
     
     if (ImGui::CollapsingHeader("Geometric Primitives", ImGuiTreeNodeFlags_DefaultOpen)) {

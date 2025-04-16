@@ -62,6 +62,9 @@ public:
 
     // 获取场景管理器
     SceneManager* getSceneManager() const { return m_sceneManager.get(); }
+    
+    // 获取点云着色器
+    Shader* getPointCloudShader() const { return m_pointCloudShader.get(); }
 
 private:
     // 初始化OpenGL
@@ -119,6 +122,9 @@ private:
 
     // 着色器
     std::shared_ptr<Shader> m_shader;
+    
+    // 点云着色器
+    std::shared_ptr<Shader> m_pointCloudShader;
     
     // 场景管理器
     std::shared_ptr<SceneManager> m_sceneManager;

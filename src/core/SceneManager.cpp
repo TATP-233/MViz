@@ -1,8 +1,11 @@
 #include "core/SceneManager.h"
 #include "rendering/Renderer.h"
 #include "core/Camera.h"
+#include "visualization/PointCloudVisual.h"
+#include "data/DataTypes.h"
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
+#include <random>
 
 namespace mviz {
 
@@ -171,6 +174,9 @@ void SceneManager::update() {
 void SceneManager::render() {
     if (!m_renderer || !m_camera) return;
     
+    // 确保使用基本着色器
+    m_renderer->useShader(Renderer::ShaderType::BASIC);
+    
     // 获取相机的视图矩阵和投影矩阵
     glm::mat4 view = m_camera->getViewMatrix();
     glm::mat4 projection = m_camera->getProjectionMatrix();
@@ -231,6 +237,56 @@ bool SceneManager::isFrameVisible(const std::string& frame_name) const {
     
     // 如果找不到对应的可视化对象，默认为可见
     return true;
+}
+
+void SceneManager::createDemoPointCloud() {
+    // 创建一个新的点云可视化对象
+    auto pointCloudVisual = std::make_shared<PointCloudVisual>("demo_point_cloud", "sensor");
+    
+    // 生成示例点云数据
+    PointCloudData pointCloud;
+    
+    // 使用随机数生成器创建一些随机点
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> posDist(-1.0f, 1.0f); // 位置范围
+    std::uniform_real_distribution<float> colorDist(0.0f, 1.0f); // 颜色范围
+    
+    // 设置点的数量
+    const int numPoints = 1000;
+    
+    // 生成随机点
+    for (int i = 0; i < numPoints; ++i) {
+        // 生成随机点位置（球形分布）
+        float r = 0.7f * std::pow(posDist(gen), 2); // 距离原点的距离（二次方分布使点更集中在中心）
+        float theta = posDist(gen) * glm::pi<float>(); // 天顶角
+        float phi = posDist(gen) * glm::pi<float>() * 2.0f; // 方位角
+        
+        float x = r * std::sin(theta) * std::cos(phi);
+        float y = r * std::sin(theta) * std::sin(phi);
+        float z = r * std::cos(theta);
+        
+        // 添加点
+        pointCloud.points.push_back(glm::vec3(x, y, z));
+        
+        // 添加随机颜色
+        pointCloud.colors.push_back(glm::vec3(
+            colorDist(gen),
+            colorDist(gen),
+            colorDist(gen)
+        ));
+    }
+    
+    // 设置点的大小
+    pointCloud.pointSize = 2.0f;
+    
+    // 将点云数据设置到可视化对象中
+    pointCloudVisual->setPointCloud(pointCloud);
+    
+    // 将点云可视化对象添加到场景中
+    addVisualObject(pointCloudVisual);
+    
+    std::cout << "Created demo point cloud with " << numPoints << " points" << std::endl;
 }
 
 } // namespace mviz 

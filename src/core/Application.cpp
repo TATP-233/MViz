@@ -26,6 +26,7 @@ Application::Application(int width, int height, const std::string& title)
     , m_camera(std::make_shared<Camera>())
     , m_renderer(nullptr)
     , m_shader(nullptr)
+    , m_pointCloudShader(nullptr)
     , m_firstMouse(true)
     , m_leftMousePressed(false)
     , m_rightMousePressed(false)
@@ -52,6 +53,7 @@ Application::~Application() {
     m_sceneManager.reset();
     m_renderer.reset();
     m_shader.reset();
+    m_pointCloudShader.reset();
 
     if (m_window) {
         glfwDestroyWindow(m_window);
@@ -129,6 +131,9 @@ bool Application::initialize() {
     // 创建示例TF数据
     m_sceneManager->createDemoTFs();
     
+    // 创建示例点云数据
+    m_sceneManager->createDemoPointCloud();
+    
     // 初始化UI
     if (!initializeUI()) {
         std::cerr << "Failed to initialize UI" << std::endl;
@@ -140,13 +145,19 @@ bool Application::initialize() {
 }
 
 bool Application::initializeRenderingResources() {
-    // 创建着色器
+    // 创建基本着色器
     try {
         std::filesystem::path currentPath = std::filesystem::current_path();
         std::string vertexShaderPath = (currentPath / "shaders/basic.vert").string();
         std::string fragmentShaderPath = (currentPath / "shaders/basic.frag").string();
         
         m_shader = std::make_shared<Shader>(vertexShaderPath, fragmentShaderPath);
+        
+        // 创建点云着色器
+        std::string pointCloudVertPath = (currentPath / "shaders/point_cloud.vert").string();
+        std::string pointCloudFragPath = (currentPath / "shaders/point_cloud.frag").string();
+        
+        m_pointCloudShader = std::make_shared<Shader>(pointCloudVertPath, pointCloudFragPath);
     } catch (const std::exception& e) {
         std::cerr << "Failed to create shader: " << e.what() << std::endl;
         return false;
@@ -160,7 +171,8 @@ bool Application::initializeRenderingResources() {
     }
     
     // 设置渲染器的着色器和相机
-    m_renderer->setShader(m_shader);
+    m_renderer->addShader(Renderer::ShaderType::BASIC, m_shader);
+    m_renderer->addShader(Renderer::ShaderType::POINT_CLOUD, m_pointCloudShader);
     m_renderer->setCamera(m_camera.get());
     
     return true;

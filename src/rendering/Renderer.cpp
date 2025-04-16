@@ -137,6 +137,9 @@ void Renderer::drawCoordinateAxes() {
         return;
     }
     
+    // 确保使用基本着色器
+    useShader(ShaderType::BASIC);
+    
     // 使用着色器
     m_shader->use();
     
@@ -243,6 +246,9 @@ void Renderer::drawGroundGrid(const std::string& referenceFrame) {
     if (!m_shader || !m_camera) {
         return;
     }
+    
+    // 确保使用基本着色器
+    useShader(ShaderType::BASIC);
     
     // 使用着色器
     m_shader->use();
@@ -407,6 +413,9 @@ void Renderer::drawTFVisualization() {
         return;
     }
     
+    // 确保使用基本着色器
+    useShader(ShaderType::BASIC);
+    
     // 更新TF可视化数据
     updateTFVisualData();
     
@@ -526,6 +535,27 @@ void Renderer::renderText(const std::string& text, const glm::vec3& position, co
         glDrawArrays(GL_POINTS, 0, 1);
         glBindVertexArray(0);
         glPointSize(1.0f);
+    }
+}
+
+void Renderer::addShader(ShaderType type, const std::shared_ptr<Shader>& shader) {
+    if (shader) {
+        m_shaders[type] = shader;
+        
+        // 如果还没有设置默认着色器，或者这是基本类型的着色器，设置它为当前的着色器
+        if (!m_shader || type == ShaderType::BASIC) {
+            m_shader = shader;
+        }
+    }
+}
+
+void Renderer::useShader(ShaderType type) {
+    auto it = m_shaders.find(type);
+    if (it != m_shaders.end() && it->second) {
+        m_shader = it->second;
+        m_shader->use();
+    } else {
+        std::cerr << "Warning: Requested shader type not found" << std::endl;
     }
 }
 
