@@ -7,45 +7,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 启用FetchContent模块
 include(FetchContent)
 
-# 下载并配置GLFW
-FetchContent_Declare(
-    glfw
-    GIT_REPOSITORY https://github.com/glfw/glfw.git
-    GIT_TAG 3.3.8
-)
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(glfw)
+# 包含第三方库配置
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/glfw.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/glad.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/glm.cmake)
 
-# 下载并配置GLAD
-FetchContent_Declare(
-    glad
-    GIT_REPOSITORY https://github.com/Dav1dde/glad.git
-    GIT_TAG master
+# 递归查找所有源文件
+file(GLOB_RECURSE PROJECT_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
-set(GLAD_PROFILE "core" CACHE STRING "OpenGL profile" FORCE)
-set(GLAD_API "gl=3.3" CACHE STRING "API type/version pairs" FORCE)
-set(GLAD_GENERATOR "c" CACHE STRING "Language" FORCE)
-FetchContent_MakeAvailable(glad)
-
-# 下载并配置GLM
-FetchContent_Declare(
-    glm
-    GIT_REPOSITORY https://github.com/g-truc/glm.git
-    GIT_TAG 0.9.9.8
-)
-FetchContent_MakeAvailable(glm)
 
 # 添加可执行文件
-add_executable(mviz 
-    src/main.cpp
-    src/core/Application.cpp
-    src/core/Camera.cpp
-    src/core/TFManager.cpp
-    src/rendering/Shader.cpp
-    src/rendering/Renderer.cpp
-)
+add_executable(mviz ${PROJECT_SOURCES})
 
 # 链接库
 target_link_libraries(mviz PRIVATE 

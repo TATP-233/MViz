@@ -15,6 +15,7 @@ class TFManager;
 class Shader;
 class Renderer;
 class Camera;
+class SceneManager;
 struct Transform;
 
 class Application {
@@ -56,7 +57,10 @@ public:
     // 示例TF操作方法
     void createDemoTFs();
     void addTransform(const std::string& parentFrame, const std::string& childFrame, const Transform& transform);
-    bool lookupTransform(const std::string& targetFrame, const std::string& sourceFrame, Transform& transform);
+    bool lookupTransform(const std::string& targetFrame, const std::string& sourceFrame, Transform& transform) const;
+
+    // 获取场景管理器
+    SceneManager* getSceneManager() const { return m_sceneManager.get(); }
 
 private:
     // 初始化OpenGL
@@ -112,7 +116,10 @@ private:
     // 着色器
     std::shared_ptr<Shader> m_shader;
     
-    // TF管理器
+    // 场景管理器 (新增)
+    std::shared_ptr<SceneManager> m_sceneManager;
+    
+    // TF管理器 (可能会通过SceneManager使用，但暂时保留向后兼容性)
     std::shared_ptr<TFManager> m_tfManager;
 
     // 计时相关

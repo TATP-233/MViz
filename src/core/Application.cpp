@@ -9,6 +9,7 @@
 #include "rendering/Renderer.h"
 #include "core/Camera.h"
 #include "core/TFManager.h"
+#include "core/SceneManager.h"
 
 namespace mviz {
 
@@ -36,10 +37,14 @@ Application::Application(int width, int height, const std::string& title)
     
     // 创建TF管理器
     m_tfManager = std::make_shared<TFManager>();
+    
+    // 创建场景管理器
+    m_sceneManager = std::make_shared<SceneManager>();
 }
 
 Application::~Application() {
     // 清理资源
+    m_sceneManager.reset();
     m_renderer.reset();
     m_shader.reset();
 
@@ -107,6 +112,17 @@ bool Application::initialize() {
         std::cerr << "Failed to initialize rendering resources" << std::endl;
         return false;
     }
+    
+    // 初始化场景管理器
+    m_sceneManager->setRenderer(m_renderer);
+    m_sceneManager->setCamera(m_camera);
+    if (!m_sceneManager->initialize()) {
+        std::cerr << "Failed to initialize scene manager" << std::endl;
+        return false;
+    }
+    
+    // 创建示例TF数据
+    m_sceneManager->createDemoTFs();
 
     m_initialized = true;
     return true;
@@ -154,9 +170,11 @@ void Application::run() {
         glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        // 绘制场景
-        m_renderer->drawCoordinateAxes();
-        m_renderer->drawGroundGrid();
+        // 更新场景
+        m_sceneManager->update();
+        
+        // 渲染场景
+        m_sceneManager->render();
         
         // 交换缓冲区并处理事件
         glfwSwapBuffers(m_window);
@@ -280,7 +298,7 @@ void Application::processMouseMovement(double xpos, double ypos) {
     if (m_leftMousePressed) {
         m_camera->processMouseDrag(xoffset, yoffset, false);
     } else if (m_rightMousePressed) {
-        m_camera->processMouseDrag(xoffset, yoffset, true);
+        m_camera->processMouseDrag(xoffset, -yoffset, true);
     } else {
         // 处理FPS模式下的自由移动
         if (m_camera->getMode() == Camera::Mode::FPS) {
@@ -330,6 +348,14 @@ void Application::setupCallbacks() {
     
     // 配置鼠标行为 - 默认为正常模式
     glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
+void Application::addTransform(const std::string& parent_frame, const std::string& child_frame, const Transform& transform) {
+    m_sceneManager->getTFManager().addTransform(parent_frame, child_frame, transform);
+}
+
+bool Application::lookupTransform(const std::string& target_frame, const std::string& source_frame, Transform& transform) const {
+    return m_sceneManager->getTFManager().lookupTransform(target_frame, source_frame, transform);
 }
 
 } // namespace mviz 
