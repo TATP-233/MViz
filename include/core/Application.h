@@ -16,6 +16,7 @@ class Shader;
 class Renderer;
 class Camera;
 class SceneManager;
+class UIManager;
 struct Transform;
 
 class Application {
@@ -68,6 +69,9 @@ private:
     
     // 初始化渲染资源
     bool initializeRenderingResources();
+    
+    // 初始化UI
+    bool initializeUI();
 
     // 处理输入
     void processInput();
@@ -116,8 +120,11 @@ private:
     // 着色器
     std::shared_ptr<Shader> m_shader;
     
-    // 场景管理器 (新增)
+    // 场景管理器
     std::shared_ptr<SceneManager> m_sceneManager;
+    
+    // UI管理器
+    std::shared_ptr<UIManager> m_uiManager;
     
     // TF管理器 (可能会通过SceneManager使用，但暂时保留向后兼容性)
     std::shared_ptr<TFManager> m_tfManager;

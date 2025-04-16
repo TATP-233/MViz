@@ -80,6 +80,9 @@ public:
     // 获取可用帧名称列表
     std::vector<std::string> getAvailableFrames() const;
     
+    // 获取可视化对象列表
+    const std::map<std::string, VisualObject::SharedPtr>& getVisualObjects() const { return m_visual_objects; }
+    
     // 更新场景状态
     void update();
     

@@ -11,6 +11,7 @@ include(FetchContent)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/glfw.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/glad.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/glm.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/imgui.cmake)
 
 # 递归查找所有源文件
 file(GLOB_RECURSE PROJECT_SOURCES
@@ -25,6 +26,7 @@ target_link_libraries(mviz PRIVATE
     glfw
     glad
     glm
+    imgui
 )
 
 # 包含头文件目录

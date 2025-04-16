@@ -10,6 +10,7 @@
 #include "core/Camera.h"
 #include "core/TFManager.h"
 #include "core/SceneManager.h"
+#include "ui/UIManager.h"
 
 namespace mviz {
 
@@ -40,10 +41,14 @@ Application::Application(int width, int height, const std::string& title)
     
     // 创建场景管理器
     m_sceneManager = std::make_shared<SceneManager>();
+    
+    // 创建UI管理器
+    m_uiManager = std::make_shared<UIManager>();
 }
 
 Application::~Application() {
     // 清理资源
+    m_uiManager.reset();
     m_sceneManager.reset();
     m_renderer.reset();
     m_shader.reset();
@@ -123,6 +128,12 @@ bool Application::initialize() {
     
     // 创建示例TF数据
     m_sceneManager->createDemoTFs();
+    
+    // 初始化UI
+    if (!initializeUI()) {
+        std::cerr << "Failed to initialize UI" << std::endl;
+        return false;
+    }
 
     m_initialized = true;
     return true;
@@ -155,6 +166,16 @@ bool Application::initializeRenderingResources() {
     return true;
 }
 
+bool Application::initializeUI() {
+    // 初始化UI管理器
+    if (!m_uiManager->initialize(m_window)) {
+        std::cerr << "Failed to initialize UI manager" << std::endl;
+        return false;
+    }
+    
+    return true;
+}
+
 void Application::run() {
     if (!m_initialized) {
         std::cerr << "Application not initialized" << std::endl;
@@ -173,8 +194,17 @@ void Application::run() {
         // 更新场景
         m_sceneManager->update();
         
+        // 开始新一帧的UI渲染
+        m_uiManager->newFrame();
+        
+        // 更新UI内容
+        m_uiManager->update(*m_sceneManager);
+        
         // 渲染场景
         m_sceneManager->render();
+        
+        // 渲染UI
+        m_uiManager->render();
         
         // 交换缓冲区并处理事件
         glfwSwapBuffers(m_window);
@@ -281,6 +311,11 @@ void Application::processInput() {
 }
 
 void Application::processMouseMovement(double xpos, double ypos) {
+    // 检查鼠标是否在ImGui窗口上
+    if (m_uiManager && m_uiManager->isMouseOverUI()) {
+        return; // 如果鼠标在UI上，则不处理相机移动
+    }
+    
     if (m_firstMouse) {
         m_lastMouseX = xpos;
         m_lastMouseY = ypos;
@@ -308,6 +343,11 @@ void Application::processMouseMovement(double xpos, double ypos) {
 }
 
 void Application::processMouseButton(int button, int action, int mods) {
+    // 检查鼠标是否在ImGui窗口上
+    if (m_uiManager && m_uiManager->isMouseOverUI()) {
+        return; // 如果鼠标在UI上，则不处理鼠标按键事件
+    }
+    
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         m_leftMousePressed = (action == GLFW_PRESS);
         
@@ -332,6 +372,11 @@ void Application::processMouseButton(int button, int action, int mods) {
 }
 
 void Application::processMouseScroll(double yoffset) {
+    // 检查鼠标是否在ImGui窗口上
+    if (m_uiManager && m_uiManager->isMouseOverUI()) {
+        return; // 如果鼠标在UI上，则不处理滚轮事件
+    }
+    
     m_camera->processMouseScroll(yoffset);
 }
 
