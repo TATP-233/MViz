@@ -42,6 +42,9 @@ private:
     // 渲染参考坐标系选择器
     void renderReferenceFrameSelector(SceneManager& sceneManager);
 
+    // 渲染坐标系统设置
+    void renderCoordinateSystemSettings(SceneManager& sceneManager);
+
     // 渲染可视化对象列表
     void renderVisualObjectList(SceneManager& sceneManager);
 

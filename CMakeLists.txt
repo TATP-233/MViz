@@ -12,6 +12,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/glfw.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/glad.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/glm.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/imgui.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/third_party/freetype.cmake)
 
 # 递归查找所有源文件
 file(GLOB_RECURSE PROJECT_SOURCES
@@ -27,6 +28,7 @@ target_link_libraries(mviz PRIVATE
     glad
     glm
     imgui
+    freetype
 )
 
 # 包含头文件目录
@@ -40,4 +42,11 @@ add_custom_command(TARGET mviz POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:mviz>/shaders
     COMMENT "Copying shader files to output directory"
+)
+
+# 复制字体文件到输出目录
+add_custom_command(TARGET mviz POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/fonts $<TARGET_FILE_DIR:mviz>/fonts
+    COMMENT "Copying font files to output directory"
 )

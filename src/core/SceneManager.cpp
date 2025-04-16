@@ -83,6 +83,7 @@ void SceneManager::setRenderer(std::shared_ptr<Renderer> renderer) {
     // 将TF管理器设置到渲染器中
     if (m_renderer) {
         m_renderer->setTFManager(&m_tf_manager);
+        m_renderer->setSceneManager(this);
     }
 }
 
@@ -116,26 +117,26 @@ void SceneManager::createDemoTFs() {
     // 创建示例TF树
     // 定义变换: world -> base_link
     Transform world_to_base;
-    world_to_base.translation = glm::vec3(0.0f, 0.0f, 0.0f);
+    world_to_base.translation = glm::vec3(0.0f, 0.3f, 0.0f);
     world_to_base.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // 单位四元数
     m_tf_manager.addTransform("world", "base_link", world_to_base);
     
     // 定义变换: base_link -> sensor
     Transform base_to_sensor;
     base_to_sensor.translation = glm::vec3(1.0f, 0.5f, 0.0f);
-    base_to_sensor.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // 单位四元数
+    base_to_sensor.rotation = glm::quat(0.707f, 0.0f, 0.707f, 0.0f); // 单位四元数   
     m_tf_manager.addTransform("base_link", "sensor", base_to_sensor);
     
     // 定义变换: base_link -> left_wheel
     Transform base_to_left_wheel;
     base_to_left_wheel.translation = glm::vec3(0.0f, -0.3f, -0.5f);
-    base_to_left_wheel.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // 单位四元数
+    base_to_left_wheel.rotation = glm::quat(0.0f, 0.0f, 0.0f, 1.0f); // 单位四元数
     m_tf_manager.addTransform("base_link", "left_wheel", base_to_left_wheel);
     
     // 定义变换: base_link -> right_wheel
     Transform base_to_right_wheel;
     base_to_right_wheel.translation = glm::vec3(0.0f, -0.3f, 0.5f);
-    base_to_right_wheel.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // 单位四元数
+    base_to_right_wheel.rotation = glm::quat(0.707f, 0.0f, 0.0f, 0.707f); // 单位四元数
     m_tf_manager.addTransform("base_link", "right_wheel", base_to_right_wheel);
     
     // 为每个坐标系创建可视化对象
@@ -176,7 +177,7 @@ void SceneManager::render() {
     glm::mat4 view_projection = projection * view;
     
     // 绘制地面网格
-    m_renderer->drawGroundGrid();
+    m_renderer->drawGroundGrid(m_reference_frame);
     
     // 绘制TF连接线
     m_renderer->drawTFVisualization();
@@ -187,6 +188,49 @@ void SceneManager::render() {
             object->draw(*m_renderer, view_projection);
         }
     }
+}
+
+// 坐标系可视化设置方法实现
+void SceneManager::setShowFrameLabels(bool show) {
+    if (m_renderer) {
+        m_renderer->setFrameLabelsVisible(show);
+    }
+}
+
+bool SceneManager::getShowFrameLabels() const {
+    return m_renderer ? m_renderer->isFrameLabelsVisible() : true;
+}
+
+void SceneManager::setFrameLabelSize(float size) {
+    if (m_renderer) {
+        m_renderer->setFrameLabelsSize(size);
+    }
+}
+
+float SceneManager::getFrameLabelSize() const {
+    return m_renderer ? m_renderer->getFrameLabelsSize() : 1.0f;
+}
+
+void SceneManager::setAxisThickness(float thickness) {
+    if (m_renderer) {
+        m_renderer->setAxisThickness(thickness);
+    }
+}
+
+float SceneManager::getAxisThickness() const {
+    return m_renderer ? m_renderer->getAxisThickness() : 1.0f;
+}
+
+bool SceneManager::isFrameVisible(const std::string& frame_name) const {
+    // 查找对应名称的坐标系可视化对象
+    std::string axesName = frame_name + "_axes";
+    auto it = m_visual_objects.find(axesName);
+    if (it != m_visual_objects.end()) {
+        return it->second->isVisible();
+    }
+    
+    // 如果找不到对应的可视化对象，默认为可见
+    return true;
 }
 
 } // namespace mviz 

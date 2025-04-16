@@ -83,6 +83,9 @@ public:
     // 获取可视化对象列表
     const std::map<std::string, VisualObject::SharedPtr>& getVisualObjects() const { return m_visual_objects; }
     
+    // 检查指定名称的坐标系是否可见
+    bool isFrameVisible(const std::string& frame_name) const;
+    
     // 更新场景状态
     void update();
     
@@ -91,6 +94,14 @@ public:
     
     // 获取TF管理器
     TFManager& getTFManager() { return m_tf_manager; }
+    
+    // 坐标系可视化设置
+    void setShowFrameLabels(bool show);
+    bool getShowFrameLabels() const;
+    void setFrameLabelSize(float size);
+    float getFrameLabelSize() const;
+    void setAxisThickness(float thickness);
+    float getAxisThickness() const;
     
 private:
     // 对象映射表（按名称索引）

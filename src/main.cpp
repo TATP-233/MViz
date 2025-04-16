@@ -3,7 +3,7 @@
 
 int main(int argc, char* argv[]) {
     try {
-        mviz::Application app(800, 600, "MViz - 3D Visualization Tool");
+        mviz::Application app(1280, 720, "MViz - 3D Visualization Tool");
         if (!app.initialize()) {
             return -1;
         }

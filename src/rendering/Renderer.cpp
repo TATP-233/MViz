@@ -1,12 +1,14 @@
 #include "rendering/Renderer.h"
 #include <vector>
 #include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
 
 namespace mviz {
 
 Renderer::Renderer()
     : m_camera(nullptr)
     , m_tfManager(nullptr)
+    , m_sceneManager(nullptr)
     , m_axesVAO(0)
     , m_axesVBO(0)
     , m_axesVertexCount(0)
@@ -16,6 +18,9 @@ Renderer::Renderer()
     , m_tfLinesVAO(0)
     , m_tfLinesVBO(0)
     , m_tfLinesVertexCount(0)
+    , m_showFrameLabels(true)
+    , m_frameLabelSize(1.0f)
+    , m_axisThickness(1.0f)
 {
 }
 
@@ -53,19 +58,36 @@ bool Renderer::initialize() {
     createGroundGrid();
     createTFVisualization();
     
+    // 创建文本渲染器
+    m_textRenderer = std::make_shared<TextRenderer>();
+    
+    // 尝试不同的字体加载路径
+    std::vector<std::string> fontPaths = {
+        "fonts/Helvetica.ttc",               // 相对路径
+        "./fonts/Helvetica.ttc",             // 当前目录相对路径
+        "../fonts/Helvetica.ttc",            // 上级目录
+        "../../fonts/Helvetica.ttc",         // 更上级目录
+    };
+    
+    bool fontLoaded = false;
+    for (const auto& path : fontPaths) {
+        std::cout << "尝试加载字体: " << path << std::endl;
+        if (m_textRenderer->initialize(path, 32)) {
+            std::cout << "成功加载字体: " << path << std::endl;
+            fontLoaded = true;
+            break;
+        }
+    }
+    
+    if (!fontLoaded) {
+        std::cerr << "警告: 无法加载任何字体文件，将使用点标记代替文本" << std::endl;
+    }
+    
     return true;
 }
 
 void Renderer::setShader(const std::shared_ptr<Shader>& shader) {
     m_shader = shader;
-}
-
-void Renderer::setCamera(const Camera* camera) {
-    m_camera = camera;
-}
-
-void Renderer::setTFManager(const TFManager* tfManager) {
-    m_tfManager = tfManager;
 }
 
 void Renderer::createCoordinateAxes(float size) {
@@ -124,10 +146,16 @@ void Renderer::drawCoordinateAxes() {
     m_shader->setMat4("view", m_camera->getViewMatrix());
     m_shader->setMat4("projection", m_camera->getProjectionMatrix());
     
+    // 设置线宽
+    glLineWidth(m_axisThickness);
+    
     // 绘制坐标轴
     glBindVertexArray(m_axesVAO);
     glDrawArrays(GL_LINES, 0, m_axesVertexCount);
     glBindVertexArray(0);
+    
+    // 恢复默认线宽
+    glLineWidth(1.0f);
 }
 
 void Renderer::createGroundGrid(float size, float step) {
@@ -211,24 +239,41 @@ void Renderer::createGroundGrid(float size, float step) {
     glBindVertexArray(0);
 }
 
-void Renderer::drawGroundGrid() {
-    if (!m_shader || !m_camera || !m_gridVAO) {
+void Renderer::drawGroundGrid(const std::string& referenceFrame) {
+    if (!m_shader || !m_camera) {
         return;
     }
     
     // 使用着色器
     m_shader->use();
     
-    // 设置模型、视图和投影矩阵
+    // 如果指定了特定的参考坐标系，获取从世界坐标系到该坐标系的变换
     glm::mat4 model = glm::mat4(1.0f);
+    
+    if (m_tfManager && referenceFrame != "world") {
+        Transform worldToRef;
+        if (m_tfManager->lookupTransform("world", referenceFrame, worldToRef)) {
+            // 创建变换矩阵 - 先旋转后平移
+            glm::mat4 rotMat = glm::mat4_cast(worldToRef.rotation);
+            model = glm::translate(glm::mat4(1.0f), worldToRef.translation) * rotMat;
+        }
+    }
+    
+    // 设置模型、视图和投影矩阵
     m_shader->setMat4("model", model);
     m_shader->setMat4("view", m_camera->getViewMatrix());
     m_shader->setMat4("projection", m_camera->getProjectionMatrix());
     
-    // 绘制地面网格
+    // 临时禁用深度写入，确保网格不会遮挡其他对象
+    glDepthMask(GL_FALSE);
+    
+    // 绑定网格VAO并绘制
     glBindVertexArray(m_gridVAO);
     glDrawArrays(GL_LINES, 0, m_gridVertexCount);
     glBindVertexArray(0);
+    
+    // 恢复深度写入
+    glDepthMask(GL_TRUE);
 }
 
 void Renderer::createTFVisualization() {
@@ -377,6 +422,9 @@ void Renderer::drawTFVisualization() {
         glm::mat4 model = glm::mat4(1.0f);
         m_shader->setMat4("model", model);
         
+        // 连接线使用细一点的线
+        glLineWidth(m_axisThickness * 0.7f);
+        
         glBindVertexArray(m_tfLinesVAO);
         glDrawArrays(GL_LINES, 0, m_tfLinesVertexCount);
         glBindVertexArray(0);
@@ -384,6 +432,15 @@ void Renderer::drawTFVisualization() {
     
     // 绘制TF坐标系
     for (const auto& frame : m_tfFrames) {
+        // 检查坐标系是否应该可见，或者是否应该显示标签
+        // 如果是world坐标系，或者用户启用了显示标签，我们就显示坐标系
+        bool isVisible = !m_sceneManager || m_sceneManager->isFrameVisible(frame.name);
+        bool shouldDrawFrame = isVisible || (m_showFrameLabels && frame.name != "world");
+        
+        if (!shouldDrawFrame) {
+            continue;  // 跳过不可见的坐标系
+        }
+        
         // 设置模型矩阵，偏移到坐标系位置
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, frame.position);
@@ -401,10 +458,28 @@ void Renderer::drawTFVisualization() {
         
         m_shader->setMat4("model", model);
         
-        glBindVertexArray(frame.vao);
-        glDrawArrays(GL_LINES, 0, frame.vertexCount);
-        glBindVertexArray(0);
+        // 如果坐标系应该可见，则绘制坐标轴
+        if (isVisible) {
+            // 设置坐标轴线宽
+            glLineWidth(m_axisThickness);
+            
+            glBindVertexArray(frame.vao);
+            glDrawArrays(GL_LINES, 0, frame.vertexCount);
+            glBindVertexArray(0);
+        }
+        
+        // 如果启用了标签显示，绘制坐标系名称（世界坐标系除外，它已经通过网格显示）
+        if (m_showFrameLabels && frame.name != "world") {
+            // 计算标签位置，略微偏移以便可见
+            glm::vec3 labelPos = frame.position + glm::vec3(0.0f, 0.2f * m_frameLabelSize, 0.0f);
+            
+            // 绘制文本
+            renderText(frame.name, labelPos, glm::vec3(1.0f, 1.0f, 1.0f));
+        }
     }
+    
+    // 恢复默认线宽
+    glLineWidth(1.0f);
 }
 
 void Renderer::clear() {
@@ -425,6 +500,33 @@ void Renderer::setupOpenGLState() {
     
     // 设置背景颜色
     glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
+}
+
+void Renderer::renderText(const std::string& text, const glm::vec3& position, const glm::vec3& color) {
+    if (m_textRenderer && m_camera) {
+        // 使用文本渲染器绘制3D文本
+        m_textRenderer->renderText3D(text, position, m_frameLabelSize * 0.005f, color, m_camera->getViewMatrix(), m_camera->getProjectionMatrix());
+    } else if (m_shader && m_camera) {
+        // 回退方法：使用点标记
+        // 使用已有的着色器
+        m_shader->use();
+        
+        // 创建一个小方块在文本位置
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, position);
+        model = glm::scale(model, glm::vec3(0.05f * m_frameLabelSize));
+        
+        m_shader->setMat4("model", model);
+        m_shader->setMat4("view", m_camera->getViewMatrix());
+        m_shader->setMat4("projection", m_camera->getProjectionMatrix());
+        
+        // 使用坐标轴VAO绘制一个点
+        glPointSize(5.0f * m_frameLabelSize);
+        glBindVertexArray(m_axesVAO);
+        glDrawArrays(GL_POINTS, 0, 1);
+        glBindVertexArray(0);
+        glPointSize(1.0f);
+    }
 }
 
 } // namespace mviz 

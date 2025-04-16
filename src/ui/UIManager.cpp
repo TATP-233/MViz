@@ -93,7 +93,7 @@ void UIManager::update(SceneManager& sceneManager) {
 void UIManager::renderControlPanel(SceneManager& sceneManager) {
     // 创建左侧控制面板
     ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(250, 400), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(250, 500), ImGuiCond_FirstUseEver);
     
     if (ImGui::Begin("MViz Control Panel")) {
         ImGui::Text("MViz - 3D Visualization Tool");
@@ -105,6 +105,10 @@ void UIManager::renderControlPanel(SceneManager& sceneManager) {
 
         // 渲染参考坐标系选择器
         renderReferenceFrameSelector(sceneManager);
+        ImGui::Separator();
+
+        // 渲染坐标系显示设置
+        renderCoordinateSystemSettings(sceneManager);
         ImGui::Separator();
 
         // 渲染可视化对象列表
@@ -142,6 +146,30 @@ void UIManager::renderReferenceFrameSelector(SceneManager& sceneManager) {
             }
         }
         ImGui::EndCombo();
+    }
+}
+
+void UIManager::renderCoordinateSystemSettings(SceneManager& sceneManager) {
+    if (ImGui::CollapsingHeader("Coordinate System Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+        // 获取当前设置
+        bool showLabels = sceneManager.getShowFrameLabels();
+        float labelSize = sceneManager.getFrameLabelSize();
+        
+        // 显示标签的切换开关
+        if (ImGui::Checkbox("Show Frame Labels", &showLabels)) {
+            sceneManager.setShowFrameLabels(showLabels);
+        }
+        
+        // 标签大小的滑动条
+        if (ImGui::SliderFloat("Label Size", &labelSize, 0.5f, 3.0f, "%.1f")) {
+            sceneManager.setFrameLabelSize(labelSize);
+        }
+        
+        // 轴线粗细的滑动条
+        float axisThickness = sceneManager.getAxisThickness();
+        if (ImGui::SliderFloat("Axis Thickness", &axisThickness, 1.0f, 5.0f, "%.1f")) {
+            sceneManager.setAxisThickness(axisThickness);
+        }
     }
 }
 
